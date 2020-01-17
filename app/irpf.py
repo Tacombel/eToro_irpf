@@ -33,12 +33,16 @@ with open('data.csv', newline='') as csvfile:
     total_profit = 0
     total_fees = 0
 
+    print()
     print('Fecha cierre primera operación', datos[len(datos) - 1][10])
     print('Fecha cierre última operación', datos[1][10])
     print()
 
     for key in estructura:
-        print(key)
+        if key == '':
+            print('Yo')
+        else:
+            print(key)
         print(' Transacciones =', estructura[key]['transacciones'])
         print(' Profit        =', '{:.2f}'.format(estructura[key]['profit']) + '$')
         print(' Fees          =', '{:.2f}'.format(estructura[key]['fees']) + '$')
