@@ -20,6 +20,8 @@ with open('data.csv', newline='') as csvfile:
     estructura = defaultdict(dict)
 
     for e in datos:
+        if e[2] == '':
+            e[2] = 'Yo'
         if not e[2] in estructura:
             estructura[e[2]]['profit'] = round(float(e[8]), 2)
             estructura[e[2]]['fees'] = round(float(e[13]), 2)
@@ -38,18 +40,20 @@ with open('data.csv', newline='') as csvfile:
     print('Fecha cierre última operación', datos[1][10])
     print()
 
+    copiados = []
     for key in estructura:
-        if key == '':
-            print('Yo')
-        else:
-            print(key)
-        print(' Transacciones =', estructura[key]['transacciones'])
-        print(' Profit        =', '{:.2f}'.format(estructura[key]['profit']) + '$')
-        print(' Fees          =', '{:.2f}'.format(estructura[key]['fees']) + '$')
-        print(' Neto          =', '{:.2f}'.format((estructura[key]['profit'] - estructura[key]['fees'])) + '$')
-        total_transacciones = total_transacciones + estructura[key]['transacciones']
-        total_profit = total_profit + round(estructura[key]['profit'], 2)
-        total_fees = total_fees + round(estructura[key]['fees'], 2)
+        copiados.append(key)
+    copiados = sorted(copiados, key=str.casefold)
+
+    for e in copiados:
+        print(e)
+        print(' Transacciones =', estructura[e]['transacciones'])
+        print(' Profit        =', '{:.2f}'.format(estructura[e]['profit']) + '$')
+        print(' Fees          =', '{:.2f}'.format(estructura[e]['fees']) + '$')
+        print(' Neto          =', '{:.2f}'.format((estructura[e]['profit'] - estructura[key]['fees'])) + '$')
+        total_transacciones = total_transacciones + estructura[e]['transacciones']
+        total_profit = total_profit + round(estructura[e]['profit'], 2)
+        total_fees = total_fees + round(estructura[e]['fees'], 2)
     print('-----------------------------')
     print('Transacciones totales =', total_transacciones)
     print('Profit total          =', '{:.2f}'.format(total_profit) + '$')
