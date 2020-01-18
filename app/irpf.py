@@ -84,15 +84,15 @@ with open('data.csv', newline='') as csvfile:
     for e in copiados:
         print('Trader:', e)
         print(' Transacciones =', estructura[e]['transacciones'])
-        print(' Profit        =', '{:>8}'.format('{:.2f}'.format(estructura[e]['profit']) + '$'))
-        print(' Fees          =', '{:>8}'.format('{:.2f}'.format(estructura[e]['fees']) + '$'))
-        print(' Neto          =', '{:>8}'.format('{:.2f}'.format((estructura[e]['profit'] - estructura[key]['fees'])) + '$'))
+        print(' Profit =', '{:>8}'.format('{:.2f}'.format(estructura[e]['profit']) + '$'))
+        print(' Fees   =', '{:>8}'.format('{:.2f}'.format(estructura[e]['fees']) + '$'))
+        print(' Neto   =', '{:>8}'.format('{:.2f}'.format((estructura[e]['profit'] - estructura[e]['fees'])) + '$'))
         total_transacciones = total_transacciones + estructura[e]['transacciones']
         total_profit = total_profit + round(estructura[e]['profit'], 2)
         total_fees = total_fees + round(estructura[e]['fees'], 2)
 
     print('-----------------------------')
     print('Transacciones totales =', total_transacciones)
-    print('Profit total          =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
-    print('Fees totales          =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
-    print('Neto total            =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
+    print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
+    print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
+    print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
