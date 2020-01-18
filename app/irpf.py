@@ -8,6 +8,12 @@ def rate_dolar(fecha):
     r = requests.get(address).json()
     return r['rates']['USD']
 
+def adaptar_fecha(fecha):
+    fecha_modificada = fecha.split(" ")[0]
+    fecha_modificada = fecha_modificada.split("/")
+    fecha_modificada = fecha_modificada[2] + '-' + fecha_modificada[1] + '-' + fecha_modificada[0]
+    return fecha_modificada
+
 
 # Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
 # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
@@ -22,7 +28,6 @@ with open('data.csv', newline='') as csvfile:
         if primera:
             primera = False
             continue
-
         linea = []
         for e in row:
             e = e.replace(',', '.', 1)
@@ -30,19 +35,14 @@ with open('data.csv', newline='') as csvfile:
         datos.append(linea)
 
     estructura = defaultdict(dict)
-
     total_profit_euros = 0
     total_fees_euros = 0
 
     for e in datos:
         inicial_dolar = float(e[3])
         final_dolar = float(e[3]) + float(e[8])
-        inicial_fecha = e[9].split(" ")[0]
-        inicial_fecha = inicial_fecha.split("/")
-        inicial_fecha = inicial_fecha[2] + '-' + inicial_fecha[1] + '-' + inicial_fecha[0]
-        final_fecha = e[10].split(" ")[0]
-        final_fecha = final_fecha.split("/")
-        final_fecha = final_fecha[2] + '-' + final_fecha[1] + '-' + final_fecha[0]
+        inicial_fecha = adaptar_fecha(e[9])
+        final_fecha = adaptar_fecha(e[10])
         inicial_cambio = rate_dolar(inicial_fecha)
         if inicial_fecha == final_fecha:
             final_cambio = inicial_cambio
@@ -99,4 +99,3 @@ with open('data.csv', newline='') as csvfile:
     print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
     print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
-
