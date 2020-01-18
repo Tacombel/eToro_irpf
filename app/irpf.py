@@ -1,17 +1,13 @@
 import csv
 from collections import defaultdict
-import sqlite3
+import requests
 
-conn = sqlite3.connect('app.db')
-c = conn.cursor()
 
-# saco los datos de cambio de la base de datos de portfolio
+def rate_dolar(fecha):
+    address = 'https://api.exchangeratesapi.io/' + fecha + '?symbols=USD'
+    r = requests.get(address).json()
+    return r['rates']['USD']
 
-c.execute('SELECT * FROM cotizacion WHERE activo_id=?', ('10',))
-query = c.fetchall()
-cambios = {}
-for e in query:
-    cambios[e[1]] = e[2]
 
 # Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
 # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
@@ -44,13 +40,20 @@ with open('data.csv', newline='') as csvfile:
         inicial_fecha = e[9].split(" ")[0]
         inicial_fecha = inicial_fecha.split("/")
         inicial_fecha = inicial_fecha[2] + '-' + inicial_fecha[1] + '-' + inicial_fecha[0]
-        final_fecha = e[9].split(" ")[0]
+        final_fecha = e[10].split(" ")[0]
         final_fecha = final_fecha.split("/")
         final_fecha = final_fecha[2] + '-' + final_fecha[1] + '-' + final_fecha[0]
-        inicial_euro = inicial_dolar * cambios[inicial_fecha]
-        final_euro = final_dolar * cambios[final_fecha]
+        inicial_cambio = rate_dolar(inicial_fecha)
+        if inicial_fecha == final_fecha:
+            final_cambio = inicial_cambio
+            print(inicial_cambio)
+        else:
+            final_cambio = rate_dolar(final_fecha)
+            print(inicial_cambio, final_cambio)
+        inicial_euro = inicial_dolar * inicial_cambio
+        final_euro = final_dolar * final_cambio
         total_profit_euros = total_profit_euros + final_euro - inicial_euro
-        total_fees_euros = total_fees_euros + float(e[13]) * cambios[final_fecha]
+        total_fees_euros = total_fees_euros + float(e[13]) * final_cambio
 
         if e[2] == '':
             e[2] = 'Yo'
@@ -96,3 +99,4 @@ with open('data.csv', newline='') as csvfile:
     print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
     print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
+
