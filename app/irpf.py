@@ -5,13 +5,14 @@ import sqlite3
 conn = sqlite3.connect('app.db')
 c = conn.cursor()
 
-# saco los datos de cambio
+# saco los datos de cambio de la base de datos de portfolio
 
 c.execute('SELECT * FROM cotizacion WHERE activo_id=?', ('10',))
 query = c.fetchall()
 cambios = {}
 for e in query:
     cambios[e[1]] = e[2]
+
 # Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
 # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
 # Proceso los datos
@@ -81,16 +82,15 @@ with open('data.csv', newline='') as csvfile:
     print_total_profit = '{:.2f}'.format(total_profit) + '$'
 
     for e in copiados:
-        print(e)
+        print('Trader:', e)
         print(' Transacciones =', estructura[e]['transacciones'])
-        print(' Profit        =', '{:.2f}'.format(estructura[e]['profit']) + '$')
-        print(' Fees          =', '{:.2f}'.format(estructura[e]['fees']) + '$')
-        print(' Neto          =', '{:.2f}'.format((estructura[e]['profit'] - estructura[key]['fees'])) + '$')
+        print(' Profit        =', '{:>8}'.format('{:.2f}'.format(estructura[e]['profit']) + '$'))
+        print(' Fees          =', '{:>8}'.format('{:.2f}'.format(estructura[e]['fees']) + '$'))
+        print(' Neto          =', '{:>8}'.format('{:.2f}'.format((estructura[e]['profit'] - estructura[key]['fees'])) + '$'))
         total_transacciones = total_transacciones + estructura[e]['transacciones']
         total_profit = total_profit + round(estructura[e]['profit'], 2)
         total_fees = total_fees + round(estructura[e]['fees'], 2)
 
-    width = 5
     print('-----------------------------')
     print('Transacciones totales =', total_transacciones)
     print('Profit total          =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
