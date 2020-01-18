@@ -19,31 +19,31 @@ def adaptar_fecha(fecha):
     fecha_modificada = fecha_modificada[2] + '-' + fecha_modificada[1] + '-' + fecha_modificada[0]
     return fecha_modificada
 
+if __name__ == '__main__':
+    # Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
+    # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
+    # Proceso los datos
 
-# Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
-# y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
-# Proceso los datos
 
+    # Aqui almaceno los tipos de cambio que voy a necesitar
+    if os.path.isfile('cambio_euro_dolar.txt'):
+        cambio_euro_dolar = json.load(open('cambio_euro_dolar.txt'))
+    else:
+        cambio_euro_dolar = {}
 
-# Aqui almaceno los tipos de cambio que voy a necesitar
-if os.path.isfile('cambio_euro_dolar.txt'):
-    cambio_euro_dolar = json.load(open('cambio_euro_dolar.txt'))
-else:
-    cambio_euro_dolar = {}
-
-datos = []
-with open('data.csv', newline='') as csvfile:
-    spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')
-    primera = True
-    for row in spamreader:
-        if primera:
-            primera = False
-            continue
-        linea = []
-        for e in row:
-            e = e.replace(',', '.', 1)
-            linea.append(e)
-        datos.append(linea)
+    datos = []
+    with open('data.csv', newline='') as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')
+        primera = True
+        for row in spamreader:
+            if primera:
+                primera = False
+                continue
+            linea = []
+            for e in row:
+                e = e.replace(',', '.', 1)
+                linea.append(e)
+            datos.append(linea)
 
     estructura = defaultdict(dict)
     total_profit_euros = 0
@@ -110,6 +110,6 @@ with open('data.csv', newline='') as csvfile:
     print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
 
-# para terminar guardo los tipos de cambio en un fichero para reutilizarlo
+    # para terminar guardo los tipos de cambio en un fichero para reutilizarlo
 
-json.dump(cambio_euro_dolar, open('cambio_euro_dolar.txt', 'w'))
+    json.dump(cambio_euro_dolar, open('cambio_euro_dolar.txt', 'w'))
