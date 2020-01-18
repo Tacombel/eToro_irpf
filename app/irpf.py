@@ -90,8 +90,9 @@ with open('data.csv', newline='') as csvfile:
         total_profit = total_profit + round(estructura[e]['profit'], 2)
         total_fees = total_fees + round(estructura[e]['fees'], 2)
 
+    width = 5
     print('-----------------------------')
     print('Transacciones totales =', total_transacciones)
-    print('Profit total          =', '{:.2f}'.format(total_profit) + '$', '---', '{:.2f}'.format(total_profit_euros) + '€')
-    print('Fees totales          =', '{:.2f}'.format(total_fees) + '$', '---',  '{:.2f}'.format(total_fees_euros) + '€')
-    print('Neto total            =', '{:.2f}'.format(total_profit - total_fees) + '$', '---', '{:.2f}'.format(total_profit_euros - total_fees_euros) + '€')
+    print('Profit total          =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
+    print('Fees totales          =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
+    print('Neto total            =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
