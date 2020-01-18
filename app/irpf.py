@@ -1,6 +1,8 @@
 import csv
 from collections import defaultdict
 import requests
+import json
+import os.path
 
 
 def rate_dolar(fecha):
@@ -22,9 +24,14 @@ def adaptar_fecha(fecha):
 # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
 # Proceso los datos
 
-datos = []
-cambio_euro_dolar = {}
 
+# Aqui almaceno los tipos de cambio que voy a necesitar
+if os.path.isfile('cambio_euro_dolar.txt'):
+    cambio_euro_dolar = json.load(open('cambio_euro_dolar.txt'))
+else:
+    cambio_euro_dolar = {}
+
+datos = []
 with open('data.csv', newline='') as csvfile:
     spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')
     primera = True
@@ -102,3 +109,7 @@ with open('data.csv', newline='') as csvfile:
     print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
     print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
+
+# para terminar guardo los tipos de cambio en un fichero para reutilizarlo
+
+json.dump(cambio_euro_dolar, open('cambio_euro_dolar.txt', 'w'))
