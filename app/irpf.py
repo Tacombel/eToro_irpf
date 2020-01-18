@@ -1,3 +1,8 @@
+# python 3.6
+# Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
+# y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
+
+
 import csv
 from collections import defaultdict
 import requests
@@ -19,18 +24,15 @@ def adaptar_fecha(fecha):
     fecha_modificada = fecha_modificada[2] + '-' + fecha_modificada[1] + '-' + fecha_modificada[0]
     return fecha_modificada
 
+
 if __name__ == '__main__':
-    # Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
-    # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
-    # Proceso los datos
-
-
-    # Aqui almaceno los tipos de cambio que voy a necesitar
+    # Aqui almaceno los tipos de cambio que voy a necesitar. Para forzar la descarga, borrarlo
     if os.path.isfile('cambio_euro_dolar.txt'):
         cambio_euro_dolar = json.load(open('cambio_euro_dolar.txt'))
     else:
         cambio_euro_dolar = {}
 
+    # cargo los datos desde el fichero data.csv
     datos = []
     with open('data.csv', newline='') as csvfile:
         spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')
@@ -49,9 +51,11 @@ if __name__ == '__main__':
     total_profit_euros = 0
     total_fees_euros = 0
 
+    # proceso los datos
     for e in datos:
+        # este bloque calcula el total en euros
         inicial_dolar = float(e[3])
-        final_dolar = float(e[3]) + float(e[8])
+        final_dolar = float(e[3]) + float(e[8])  # calculo el valor final de la operacion sumando el beneficio al valos inicial
         inicial_fecha = adaptar_fecha(e[9])
         final_fecha = adaptar_fecha(e[10])
         if inicial_fecha not in cambio_euro_dolar:
@@ -65,6 +69,7 @@ if __name__ == '__main__':
         total_profit_euros = total_profit_euros + final_euro - inicial_euro
         total_fees_euros = total_fees_euros + float(e[13]) * final_cambio
 
+        # aqui monto el diccionario con los resultados para cada trader copiado
         if e[2] == '':
             e[2] = 'Yo'
         if not e[2] in estructura:
@@ -76,24 +81,21 @@ if __name__ == '__main__':
             estructura[e[2]]['fees'] = estructura[e[2]]['fees'] + round(float(e[13]), 2)
             estructura[e[2]]['transacciones'] += 1
 
-    total_transacciones = 0
-    total_profit = 0
-    total_fees = 0
-
-    print()
-    print('Fecha cierre primera operación', datos[len(datos) - 1][10])
-    print('Fecha cierre última operación', datos[1][10])
-    print()
-
-    # Lista de los trader copiados por orden alfabetico
+    # creo la ista de los trader copiados por orden alfabetico
     copiados = []
     for key in estructura:
         copiados.append(key)
     copiados = sorted(copiados, key=str.casefold)
 
-    # Formateo los valores para imprimir
-    print_total_profit = '{:.2f}'.format(total_profit) + '$'
+    # inicio la impresion de resultados
+    print()
+    print('Fecha cierre primera operación', datos[len(datos) - 1][10])
+    print('Fecha cierre última operación', datos[1][10])
+    print()
 
+    total_transacciones = 0
+    total_profit = 0
+    total_fees = 0
     for e in copiados:
         print('Trader:', e)
         print(' Transacciones =', estructura[e]['transacciones'])
@@ -111,5 +113,4 @@ if __name__ == '__main__':
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
 
     # para terminar guardo los tipos de cambio en un fichero para reutilizarlo
-
     json.dump(cambio_euro_dolar, open('cambio_euro_dolar.txt', 'w'))
