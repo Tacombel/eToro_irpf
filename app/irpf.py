@@ -6,7 +6,10 @@ import requests
 def rate_dolar(fecha):
     address = 'https://api.exchangeratesapi.io/' + fecha + '?symbols=USD'
     r = requests.get(address).json()
-    return r['rates']['USD']
+    rate = r['rates']['USD']
+    print('Tipo de cambio para el', fecha, '=', rate)
+    return rate
+
 
 def adaptar_fecha(fecha):
     fecha_modificada = fecha.split(" ")[0]
@@ -20,6 +23,7 @@ def adaptar_fecha(fecha):
 # Proceso los datos
 
 datos = []
+cambio_euro_dolar = {}
 
 with open('data.csv', newline='') as csvfile:
     spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')
@@ -43,13 +47,12 @@ with open('data.csv', newline='') as csvfile:
         final_dolar = float(e[3]) + float(e[8])
         inicial_fecha = adaptar_fecha(e[9])
         final_fecha = adaptar_fecha(e[10])
-        inicial_cambio = rate_dolar(inicial_fecha)
-        if inicial_fecha == final_fecha:
-            final_cambio = inicial_cambio
-            print(inicial_cambio)
-        else:
-            final_cambio = rate_dolar(final_fecha)
-            print(inicial_cambio, final_cambio)
+        if inicial_fecha not in cambio_euro_dolar:
+            cambio_euro_dolar[inicial_fecha] = rate_dolar(inicial_fecha)
+        inicial_cambio = cambio_euro_dolar[inicial_fecha]
+        if final_fecha not in cambio_euro_dolar:
+            cambio_euro_dolar[final_fecha] = rate_dolar(final_fecha)
+        final_cambio = cambio_euro_dolar[final_fecha]
         inicial_euro = inicial_dolar * inicial_cambio
         final_euro = final_dolar * final_cambio
         total_profit_euros = total_profit_euros + final_euro - inicial_euro
