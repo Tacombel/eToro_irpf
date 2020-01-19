@@ -1,5 +1,5 @@
 # python 3.6
-# Para crear el data.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
+# Para crear el data-*.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
 # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
 
 
@@ -9,12 +9,16 @@ import requests
 import json
 import os.path
 
+import elegir_fichero
+
 
 def rate_dolar(fecha):
     address = 'https://api.exchangeratesapi.io/' + fecha + '?symbols=USD'
     r = requests.get(address).json()
     rate = r['rates']['USD']
     print('Tipo de cambio para el', fecha, '=', rate)
+    # guardo los tipos de cambio en un fichero para reutilizarlo
+    json.dump(cambio_euro_dolar, open('cambio_euro_dolar.txt', 'w'))
     return rate
 
 
@@ -32,9 +36,11 @@ if __name__ == '__main__':
     else:
         cambio_euro_dolar = {}
 
-    # cargo los datos desde el fichero data.csv
+    # Elijo el fichero de los disponibles en el directorio. Debe llamarse data-*
+    file = elegir_fichero.menu()
+    # cargo los datos desde el fichero
     datos = []
-    with open('data.csv', newline='') as csvfile:
+    with open(file, newline='') as csvfile:
         spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')
         primera = True
         for row in spamreader:
@@ -112,5 +118,3 @@ if __name__ == '__main__':
     print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
 
-    # para terminar guardo los tipos de cambio en un fichero para reutilizarlo
-    json.dump(cambio_euro_dolar, open('cambio_euro_dolar.txt', 'w'))
