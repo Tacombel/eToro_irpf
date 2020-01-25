@@ -3,7 +3,6 @@
 # y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
 
 
-import csv
 from collections import defaultdict
 import requests
 import json
@@ -49,11 +48,12 @@ if __name__ == '__main__':
     total_profit_euros = 0
     total_fees_euros = 0
     for e in sheet.iter_rows(min_row=2,
-                               max_col=15,
-                               values_only=True):
+                             max_col=15,
+                             values_only=True):
         # este bloque calcula el total en euros
         inicial_dolar = float(e[3].replace(',', '.'))
-        final_dolar = inicial_dolar + float(e[8].replace(',', '.'))  # calculo el valor final de la operacion sumando el beneficio al valos inicial
+        final_dolar = inicial_dolar + float(
+            e[8].replace(',', '.'))  # calculo el valor final de la operacion sumando el beneficio al valos inicial
         inicial_fecha = adaptar_fecha(e[9])
         final_fecha = adaptar_fecha(e[10])
         if inicial_fecha not in cambio_euro_dolar:
@@ -72,7 +72,7 @@ if __name__ == '__main__':
             trader = 'Yo'
         else:
             trader = e[2]
-        if not trader in estructura:
+        if trader not in estructura:
             estructura[trader]['profit'] = round(float(e[8].replace(',', '.')), 2)
             estructura[trader]['fees'] = round(float(e[13].replace(',', '.')), 2)
             estructura[trader]['transacciones'] = 1
@@ -109,7 +109,9 @@ if __name__ == '__main__':
 
     print('-----------------------------')
     print('Transacciones totales =', total_transacciones)
-    print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
-    print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
-    print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'), '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
-
+    print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'),
+          '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
+    print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'),
+          '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
+    print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit - total_fees) + '$'),
+          '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))

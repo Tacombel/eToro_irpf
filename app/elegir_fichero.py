@@ -1,5 +1,6 @@
 import os
 
+
 def menu():
     path = './'
     counter = 1
@@ -11,9 +12,10 @@ def menu():
                 opciones.append(file)
                 print(counter, ': ', file)
                 counter += 1
-        opcionMenu = input("Elije un fichero >> ")
-        print('Procesaremos el fichero:', opciones[int(opcionMenu) - 1])
-        return opciones[int(opcionMenu) - 1]
+        opcion_menu = input("Elije un fichero >> ")
+        print('Procesaremos el fichero:', opciones[int(opcion_menu) - 1])
+        return opciones[int(opcion_menu) - 1]
+
 
 if __name__ == '__main__':
     menu()
