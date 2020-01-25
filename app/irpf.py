@@ -8,6 +8,7 @@ from collections import defaultdict
 import requests
 import json
 import os.path
+from openpyxl import load_workbook
 
 import elegir_fichero
 
@@ -38,30 +39,21 @@ if __name__ == '__main__':
 
     # Elijo el fichero de los disponibles en el directorio. Debe llamarse data-*
     file = elegir_fichero.menu()
-    # cargo los datos desde el fichero
-    datos = []
-    with open(file, newline='') as csvfile:
-        spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')
-        primera = True
-        for row in spamreader:
-            if primera:
-                primera = False
-                continue
-            linea = []
-            for e in row:
-                e = e.replace(',', '.', 1)
-                linea.append(e)
-            datos.append(linea)
 
+    # cargo datos desde el excel
+    workbook = load_workbook(filename=file)
+    sheet = workbook['Closed Positions']
+
+    # proceso los datos
     estructura = defaultdict(dict)
     total_profit_euros = 0
     total_fees_euros = 0
-
-    # proceso los datos
-    for e in datos:
+    for e in sheet.iter_rows(min_row=2,
+                               max_col=15,
+                               values_only=True):
         # este bloque calcula el total en euros
-        inicial_dolar = float(e[3])
-        final_dolar = float(e[3]) + float(e[8])  # calculo el valor final de la operacion sumando el beneficio al valos inicial
+        inicial_dolar = float(e[3].replace(',', '.'))
+        final_dolar = inicial_dolar + float(e[8].replace(',', '.'))  # calculo el valor final de la operacion sumando el beneficio al valos inicial
         inicial_fecha = adaptar_fecha(e[9])
         final_fecha = adaptar_fecha(e[10])
         if inicial_fecha not in cambio_euro_dolar:
@@ -73,30 +65,31 @@ if __name__ == '__main__':
         inicial_euro = inicial_dolar * inicial_cambio
         final_euro = final_dolar * final_cambio
         total_profit_euros = total_profit_euros + final_euro - inicial_euro
-        total_fees_euros = total_fees_euros + float(e[13]) * final_cambio
+        total_fees_euros = total_fees_euros + float(e[13].replace(',', '.')) * final_cambio
 
         # aqui monto el diccionario con los resultados para cada trader copiado
         if e[2] == '':
             e[2] = 'Yo'
         if not e[2] in estructura:
-            estructura[e[2]]['profit'] = round(float(e[8]), 2)
-            estructura[e[2]]['fees'] = round(float(e[13]), 2)
+            estructura[e[2]]['profit'] = round(float(e[8].replace(',', '.')), 2)
+            estructura[e[2]]['fees'] = round(float(e[13].replace(',', '.')), 2)
             estructura[e[2]]['transacciones'] = 1
         else:
-            estructura[e[2]]['profit'] = estructura[e[2]]['profit'] + round(float(e[8]), 2)
-            estructura[e[2]]['fees'] = estructura[e[2]]['fees'] + round(float(e[13]), 2)
+            estructura[e[2]]['profit'] = estructura[e[2]]['profit'] + round(float(e[8].replace(',', '.')), 2)
+            estructura[e[2]]['fees'] = estructura[e[2]]['fees'] + round(float(e[13].replace(',', '.')), 2)
             estructura[e[2]]['transacciones'] += 1
 
-    # creo la ista de los trader copiados por orden alfabetico
+    # creo la lista de los trader copiados por orden alfabetico
     copiados = []
     for key in estructura:
         copiados.append(key)
     copiados = sorted(copiados, key=str.casefold)
 
     # inicio la impresion de resultados
+    posicion_fecha_cierre_primera_operacion = 'K' + str(sheet.max_row)
     print()
-    print('Fecha cierre primera operación', datos[len(datos) - 1][10])
-    print('Fecha cierre última operación', datos[1][10])
+    print('Fecha cierre primera operación', sheet[posicion_fecha_cierre_primera_operacion].value)
+    print('Fecha cierre última operación', sheet['K2'].value)
     print()
 
     total_transacciones = 0

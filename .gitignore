@@ -1,2 +1,3 @@
 /app/data*.csv
 /app/cambio_euro_dolar.txt
+/app/eToroAccountStatement*
