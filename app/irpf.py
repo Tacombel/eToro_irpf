@@ -68,16 +68,18 @@ if __name__ == '__main__':
         total_fees_euros = total_fees_euros + float(e[13].replace(',', '.')) * final_cambio
 
         # aqui monto el diccionario con los resultados para cada trader copiado
-        if e[2] == '':
-            e[2] = 'Yo'
-        if not e[2] in estructura:
-            estructura[e[2]]['profit'] = round(float(e[8].replace(',', '.')), 2)
-            estructura[e[2]]['fees'] = round(float(e[13].replace(',', '.')), 2)
-            estructura[e[2]]['transacciones'] = 1
+        if e[2] is None:
+            trader = 'Yo'
         else:
-            estructura[e[2]]['profit'] = estructura[e[2]]['profit'] + round(float(e[8].replace(',', '.')), 2)
-            estructura[e[2]]['fees'] = estructura[e[2]]['fees'] + round(float(e[13].replace(',', '.')), 2)
-            estructura[e[2]]['transacciones'] += 1
+            trader = e[2]
+        if not trader in estructura:
+            estructura[trader]['profit'] = round(float(e[8].replace(',', '.')), 2)
+            estructura[trader]['fees'] = round(float(e[13].replace(',', '.')), 2)
+            estructura[trader]['transacciones'] = 1
+        else:
+            estructura[trader]['profit'] = estructura[trader]['profit'] + round(float(e[8].replace(',', '.')), 2)
+            estructura[trader]['fees'] = estructura[trader]['fees'] + round(float(e[13].replace(',', '.')), 2)
+            estructura[trader]['transacciones'] += 1
 
     # creo la lista de los trader copiados por orden alfabetico
     copiados = []
