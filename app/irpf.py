@@ -17,8 +17,6 @@ def rate_dolar(fecha):
     r = requests.get(address).json()
     rate = r['rates']['USD']
     print('Tipo de cambio para el', fecha, '=', rate)
-    # guardo los tipos de cambio en un fichero para reutilizarlo
-    json.dump(cambio_euro_dolar, open('cambio_euro_dolar.txt', 'w'))
     return rate
 
 
@@ -31,8 +29,9 @@ def adaptar_fecha(fecha):
 
 if __name__ == '__main__':
     # Aqui almaceno los tipos de cambio que voy a necesitar. Para forzar la descarga, borrarlo
-    if os.path.isfile('cambio_euro_dolar.txt'):
-        cambio_euro_dolar = json.load(open('cambio_euro_dolar.txt'))
+    if os.path.isfile('cambio_euro_dolar.json'):
+        with open('cambio_euro_dolar.json', 'r') as f:
+            cambio_euro_dolar = json.load(f)
     else:
         cambio_euro_dolar = {}
 
@@ -58,6 +57,9 @@ if __name__ == '__main__':
         final_fecha = adaptar_fecha(e[10])
         if inicial_fecha not in cambio_euro_dolar:
             cambio_euro_dolar[inicial_fecha] = rate_dolar(inicial_fecha)
+            # guardo los tipos de cambio en un fichero para reutilizarlo
+            with open('cambio_euro_dolar.json', 'w') as f:
+                json.dump(cambio_euro_dolar, f)
         inicial_cambio = cambio_euro_dolar[inicial_fecha]
         if final_fecha not in cambio_euro_dolar:
             cambio_euro_dolar[final_fecha] = rate_dolar(final_fecha)
