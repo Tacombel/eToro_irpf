@@ -1,7 +1,4 @@
 # python 3.6
-# Para crear el data-*.csv descargo de eToro el fichero del periodo que interesa, lo abro en Google Docs
-# y descargo la pestaña Closed Positions como csv, incluyendo la fila de títulos
-
 
 from collections import defaultdict
 import requests
