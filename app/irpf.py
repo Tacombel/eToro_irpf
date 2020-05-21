@@ -91,9 +91,11 @@ if __name__ == '__main__':
 
     # inicio la impresion de resultados
     posicion_fecha_cierre_primera_operacion = 'K' + str(sheet.max_row)
+    posicion_fecha_apertura_primera_operacion = 'J' + str(sheet.max_row)
     print()
-    print('Fecha cierre primera operación', sheet[posicion_fecha_cierre_primera_operacion].value)
-    print('Fecha cierre última operación', sheet['K2'].value)
+    print('Fecha apertura primera operación', sheet[posicion_fecha_apertura_primera_operacion].value)
+    print('Fecha cierre primera operación  ', sheet[posicion_fecha_cierre_primera_operacion].value)
+    print('Fecha cierre última operación   ', sheet['K2'].value)
     print()
 
     total_transacciones = 0
