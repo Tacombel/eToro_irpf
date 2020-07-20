@@ -5,7 +5,6 @@
 # encuentro una discrepancia de 6 centimos, que aparecen como pendientes de cerrar en el listado de 2019, luego cuadra
 # correctamente, no hay errores de redondeo.
 
-from collections import defaultdict
 from openpyxl import load_workbook
 
 import elegir_fichero
@@ -20,7 +19,6 @@ if __name__ == '__main__':
     sheet = workbook['Transactions Report']
 
     # proceso los datos
-    estructura = defaultdict(dict)
     total_profit_euros = 0
     total_fees_euros = 0
     cerradas = []
