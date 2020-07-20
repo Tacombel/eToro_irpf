@@ -1,4 +1,10 @@
 # python 3.6
+# Pueden aparecer pequeñas discrepancias entre este listado y los de eToro, ya que este solo considera operaciones
+# cerradas. Los rollover/dividends liquidados en el periodo no se tienen en cuen ta aqui, pero si en el script de
+# transacciones. En buena ley se deberían considerar aquí como parte del período, y restarlos como ya aplicados en el
+# período siguiente, pero dado que los importes son pequeños por ahora no me complico. Por ejemplo, en el años 2019
+# faltaría por aplicar 6 centimos con lo que el neto total serian 437$ en lugar de 436.94$, difiriendo esos 6 centimos
+# de gastos al momento en que se cierren las correspondientes ordenes.
 
 from collections import defaultdict
 import requests
@@ -115,4 +121,4 @@ if __name__ == '__main__':
     print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'),
           '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit + total_fees) + '$'),
-          '{:>8}'.format('{:.2f}'.format(total_profit_euros - total_fees_euros) + '€'))
+          '{:>8}'.format('{:.2f}'.format(total_profit_euros + total_fees_euros) + '€'))
