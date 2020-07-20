@@ -1,6 +1,9 @@
 # python 3.6
 # Este script calcula las variaciones a partir del listado de transacciones, por lo que coincide exactamente con los
 # resumenes de eToro, mientras que el de irpf solo considera operaciones cerradas.
+# Cuando comparo el resultado de este script con el de irpf aplicado al año 2020 (con datos de mediados de julio) me
+# encuentro una discrepancia de 6 centimos, que aparecen como pendientes de cerrar en el listado de 2019, luego cuadra
+# correctamente, no hay errores de redondeo.
 
 from collections import defaultdict
 from openpyxl import load_workbook
