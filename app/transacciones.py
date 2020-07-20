@@ -11,7 +11,6 @@ import elegir_fichero
 
 
 if __name__ == '__main__':
-    # Elijo el fichero de los disponibles en el directorio. Debe llamarse data-*
     file = elegir_fichero.menu()
 
     # cargo datos desde el excel

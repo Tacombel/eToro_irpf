@@ -38,7 +38,6 @@ if __name__ == '__main__':
     else:
         cambio_euro_dolar = {}
 
-    # Elijo el fichero de los disponibles en el directorio. Debe llamarse data-*
     file = elegir_fichero.menu()
 
     # cargo datos desde el excel
