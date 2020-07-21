@@ -82,11 +82,13 @@ if __name__ == '__main__':
             trader = e[2]
         if trader not in estructura:
             estructura[trader]['profit'] = round(float(e[8].replace(',', '.')), 2)
+            estructura[trader]['spread'] = round(float(e[7].replace(',', '.')), 2)
             estructura[trader]['fees'] = round(float(e[13].replace(',', '.')), 2)
             estructura[trader]['transacciones'] = 1
         else:
-            estructura[trader]['profit'] = estructura[trader]['profit'] + round(float(e[8].replace(',', '.')), 2)
-            estructura[trader]['fees'] = estructura[trader]['fees'] + round(float(e[13].replace(',', '.')), 2)
+            estructura[trader]['profit'] += round(float(e[8].replace(',', '.')), 2)
+            estructura[trader]['spread'] += round(float(e[7].replace(',', '.')), 2)
+            estructura[trader]['fees'] += round(float(e[13].replace(',', '.')), 2)
             estructura[trader]['transacciones'] += 1
 
     # creo la lista de los trader copiados por orden alfabetico
@@ -116,32 +118,35 @@ if __name__ == '__main__':
     posicion_fecha_apertura_primera_operacion = 'J' + str(sheet_1.max_row)
     print()
     print('---Operaciones cerradas')
-    print('Fecha apertura primera operación', sheet_1[posicion_fecha_apertura_primera_operacion].value)
-    print('Fecha cierre primera operación  ', sheet_1[posicion_fecha_cierre_primera_operacion].value)
+    print('Fecha apertura/cierre primera operación', sheet_1[posicion_fecha_apertura_primera_operacion].value, '-', sheet_1[posicion_fecha_cierre_primera_operacion].value)
     print('Fecha cierre última operación   ', sheet_1['K2'].value)
     print()
 
     total_transacciones = 0
     total_profit = 0
     total_fees = 0
+    total_spread = 0
     for e in copiados:
         print('Trader:', e)
-        print(' Transacciones =', estructura[e]['transacciones'])
+        print(' Operaciones cerradas =', estructura[e]['transacciones'])
         print(' Profit =', '{:>8}'.format('{:.2f}'.format(estructura[e]['profit']) + '$'))
         print(' Fees   =', '{:>8}'.format('{:.2f}'.format(estructura[e]['fees']) + '$'))
         print(' Neto   =', '{:>8}'.format('{:.2f}'.format((estructura[e]['profit'] + estructura[e]['fees'])) + '$'))
+        print(' Spread =', '{:>8}'.format('{:.2f}'.format(estructura[e]['spread'] * (-1)) + '$'))
         total_transacciones = total_transacciones + estructura[e]['transacciones']
-        total_profit = total_profit + round(estructura[e]['profit'], 2)
-        total_fees = total_fees + round(estructura[e]['fees'], 2)
+        total_profit += round(estructura[e]['profit'], 2)
+        total_fees += round(estructura[e]['fees'], 2)
+        total_spread += round(estructura[e]['spread'], 2)
 
     print('-----------------------------')
     print('Operaciones cerradas =', total_transacciones)
-    print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'),
+    print('Profit total   =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'),
           '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
-    print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'),
+    print('Fees totales   =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'),
           '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
-    print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit + total_fees) + '$'),
+    print('Neto total     =', '{:>8}'.format('{:.2f}'.format(total_profit + total_fees) + '$'),
           '{:>8}'.format('{:.2f}'.format(total_profit_euros + total_fees_euros) + '€'))
+    print('Spread total   =', '{:>8}'.format('{:.2f}'.format(total_spread * (-1)) + '$'))
     print()
     print('---Transacciones')
     print('Fondos aportados en el período:                          ',
