@@ -44,13 +44,16 @@ if __name__ == '__main__':
     workbook = load_workbook(filename=file)
     sheet = workbook['Closed Positions']
 
-    # proceso los datos
+    # proceso los datos de posiciones cerradas
     estructura = defaultdict(dict)
     total_profit_euros = 0
     total_fees_euros = 0
+    ID_operaciones_cerradas = []
     for e in sheet.iter_rows(min_row=2,
                              max_col=15,
                              values_only=True):
+        # creo una lista de operaciones cerradas
+        ID_operaciones_cerradas.append(e[0])
         # este bloque calcula el total en euros
         inicial_dolar = float(e[3].replace(',', '.'))
         final_dolar = inicial_dolar + float(
@@ -91,10 +94,28 @@ if __name__ == '__main__':
         copiados.append(key)
     copiados = sorted(copiados, key=str.casefold)
 
+    # proceso las transacciones realizadas
+    sheet = workbook['Transactions Report']
+    equity_change_cerradas = 0
+    equity_change_abiertas = 0
+    fondos_aportados = 0
+    for e in sheet.iter_rows(min_row=2,
+                             max_col=9,
+                             values_only=True):
+        if e[4] in ID_operaciones_cerradas:
+            equity_change_cerradas += e[6]
+        else:
+            if e[2] == 'Deposit':
+                fondos_aportados += e[5]
+            else:
+                print(e[6])
+                equity_change_abiertas += e[6]
+
     # inicio la impresion de resultados
     posicion_fecha_cierre_primera_operacion = 'K' + str(sheet.max_row)
     posicion_fecha_apertura_primera_operacion = 'J' + str(sheet.max_row)
     print()
+    print('Operaciones cerradas')
     print('Fecha apertura primera operación', sheet[posicion_fecha_apertura_primera_operacion].value)
     print('Fecha cierre primera operación  ', sheet[posicion_fecha_cierre_primera_operacion].value)
     print('Fecha cierre última operación   ', sheet['K2'].value)
@@ -121,3 +142,14 @@ if __name__ == '__main__':
           '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit + total_fees) + '$'),
           '{:>8}'.format('{:.2f}'.format(total_profit_euros + total_fees_euros) + '€'))
+    print()
+    print('Transacciones')
+    print('Fondos aportados en el período:                          ',
+          '{:>8}'.format('{:.2f}'.format(fondos_aportados) + '$'))
+    print()
+    print('Equity change ordenes cerradas en el período:            ',
+          '{:>8}'.format('{:.2f}'.format(equity_change_cerradas) + '$'))
+    print('Equity change ordenes pendientes de cerrar en el período:',
+          '{:>8}'.format('{:.2f}'.format(equity_change_abiertas) + '$'))
+    print('Equity change en el período:                             ',
+          '{:>8}'.format('{:.2f}'.format(equity_change_cerradas + equity_change_abiertas) + '$'))
