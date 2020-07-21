@@ -7,14 +7,28 @@
 # coincidir con la diferencia. A efectos de IRPF, estaría difiriendo la imputación de esos gastos al periodo siguiente,
 # lo cual no es correcto pero no me causa beneficio.
 
+import os
 from collections import defaultdict
 import requests
 import json
 import os.path
 from openpyxl import load_workbook
 
-import elegir_fichero
 
+def menu():
+    path = './'
+    counter = 1
+    opciones = []
+    # r=root, d=directories, f = files
+    for f in os.walk(path):
+        for file in f[2]:
+            if 'eToro' in file:
+                opciones.append(file)
+                print(counter, ': ', file)
+                counter += 1
+        opcion_menu = input("Elije un fichero >> ")
+        print('Procesaremos el fichero:', opciones[int(opcion_menu) - 1])
+        return opciones[int(opcion_menu) - 1]
 
 def rate_dolar(fecha):
     address = 'https://api.exchangeratesapi.io/' + fecha + '?symbols=USD'
@@ -39,7 +53,7 @@ if __name__ == '__main__':
     else:
         cambio_euro_dolar = {}
 
-    file = elegir_fichero.menu()
+    file = menu()
 
     # cargo datos desde el excel
     workbook = load_workbook(filename=file)
@@ -158,3 +172,5 @@ if __name__ == '__main__':
           '{:>8}'.format('{:.2f}'.format(equity_change_abiertas) + '$'))
     print('Equity change en el período:                             ',
           '{:>8}'.format('{:.2f}'.format(equity_change_cerradas + equity_change_abiertas) + '$'))
+    print()
+    input('Pulsa Enter para cerrar...')
