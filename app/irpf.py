@@ -1,10 +1,11 @@
 # python 3.6
-# Pueden aparecer pequeñas discrepancias entre este listado y los de eToro, ya que este solo considera operaciones
-# cerradas. Los rollover/dividends liquidados en el periodo no se tienen en cuen ta aqui, pero si en el script de
-# transacciones. En buena ley se deberían considerar aquí como parte del período, y restarlos como ya aplicados en el
-# período siguiente, pero dado que los importes son pequeños por ahora no me complico. Por ejemplo, en el años 2019
-# faltaría por aplicar 6 centimos con lo que el neto total serian 437$ en lugar de 436.94$, difiriendo esos 6 centimos
-# de gastos al momento en que se cierren las correspondientes ordenes.
+
+# En las transacciones solo están las que se han realizado en el periodo considerado. Es posible por tanto que una
+# operación abierta antes del periodo incluya fees/dividends imputados como transaccion en el periodo anterior y es por
+# esto que el "Neto total" de operaciones cerradas y el "Equity change de operaciones cerradas en el periodo" pueden mostrar
+# una diferencia. Si vemos el "Equity change ordenes pendientes de cerrar en el período" del periodo anterior, debería
+# coincidir con la diferencia. A efectos de IRPF, estaría difiriendo la imputación de esos gastos al periodo siguiente,
+# lo cual no es correcto pero no me causa beneficio.
 
 from collections import defaultdict
 import requests
@@ -42,14 +43,14 @@ if __name__ == '__main__':
 
     # cargo datos desde el excel
     workbook = load_workbook(filename=file)
-    sheet = workbook['Closed Positions']
+    sheet_1 = workbook['Closed Positions']
 
     # proceso los datos de posiciones cerradas
     estructura = defaultdict(dict)
     total_profit_euros = 0
     total_fees_euros = 0
     ID_operaciones_cerradas = []
-    for e in sheet.iter_rows(min_row=2,
+    for e in sheet_1.iter_rows(min_row=2,
                              max_col=15,
                              values_only=True):
         # creo una lista de operaciones cerradas
@@ -95,11 +96,11 @@ if __name__ == '__main__':
     copiados = sorted(copiados, key=str.casefold)
 
     # proceso las transacciones realizadas
-    sheet = workbook['Transactions Report']
+    sheet_2 = workbook['Transactions Report']
     equity_change_cerradas = 0
     equity_change_abiertas = 0
     fondos_aportados = 0
-    for e in sheet.iter_rows(min_row=2,
+    for e in sheet_2.iter_rows(min_row=2,
                              max_col=9,
                              values_only=True):
         if e[4] in ID_operaciones_cerradas:
@@ -108,17 +109,16 @@ if __name__ == '__main__':
             if e[2] == 'Deposit':
                 fondos_aportados += e[5]
             else:
-                print(e[6])
                 equity_change_abiertas += e[6]
 
     # inicio la impresion de resultados
-    posicion_fecha_cierre_primera_operacion = 'K' + str(sheet.max_row)
-    posicion_fecha_apertura_primera_operacion = 'J' + str(sheet.max_row)
+    posicion_fecha_cierre_primera_operacion = 'K' + str(sheet_1.max_row)
+    posicion_fecha_apertura_primera_operacion = 'J' + str(sheet_1.max_row)
     print()
-    print('Operaciones cerradas')
-    print('Fecha apertura primera operación', sheet[posicion_fecha_apertura_primera_operacion].value)
-    print('Fecha cierre primera operación  ', sheet[posicion_fecha_cierre_primera_operacion].value)
-    print('Fecha cierre última operación   ', sheet['K2'].value)
+    print('---Operaciones cerradas')
+    print('Fecha apertura primera operación', sheet_1[posicion_fecha_apertura_primera_operacion].value)
+    print('Fecha cierre primera operación  ', sheet_1[posicion_fecha_cierre_primera_operacion].value)
+    print('Fecha cierre última operación   ', sheet_1['K2'].value)
     print()
 
     total_transacciones = 0
@@ -135,7 +135,7 @@ if __name__ == '__main__':
         total_fees = total_fees + round(estructura[e]['fees'], 2)
 
     print('-----------------------------')
-    print('Transacciones totales =', total_transacciones)
+    print('Operaciones cerradas =', total_transacciones)
     print('Profit total =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'),
           '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
     print('Fees totales =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'),
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     print('Neto total   =', '{:>8}'.format('{:.2f}'.format(total_profit + total_fees) + '$'),
           '{:>8}'.format('{:.2f}'.format(total_profit_euros + total_fees_euros) + '€'))
     print()
-    print('Transacciones')
+    print('---Transacciones')
     print('Fondos aportados en el período:                          ',
           '{:>8}'.format('{:.2f}'.format(fondos_aportados) + '$'))
     print()
