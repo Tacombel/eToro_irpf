@@ -13,26 +13,27 @@ def menu():
     counter = 1
     opciones = []
     # r=root, d=directories, f = files
-    for f in os.walk(path):
-        for file in f[2]:
-            if 'eToro' in file:
-                opciones.append(file)
-                print(counter, ': ', file)
+    for f1 in os.walk(path):
+        for file1 in f1[2]:
+            if 'eToro' in file1:
+                opciones.append(file1)
+                print(counter, ': ', file1)
                 counter += 1
         opcion_menu = input("Elije un fichero >> ")
         print('Procesaremos el fichero:', opciones[int(opcion_menu) - 1])
         return opciones[int(opcion_menu) - 1]
 
-def rate_dolar(fecha):
-    address = 'http://api.currencylayer.com/historical?access_key=' + config['API_CURRENCYLAYER'] + '&date=' + fecha + '&currencies=EUR&format=1'
+
+def rate_dolar(fecha2):
+    address = 'http://api.currencylayer.com/historical?access_key=' + config['API_CURRENCYLAYER'] + '&date=' + fecha2 + '&currencies=EUR&format=1'
     r = requests.get(address).json()
     rate = r['quotes']['USDEUR']
-    print('Tipo de cambio para el', fecha, '=', rate)
+    print('Tipo de cambio para el', fecha2, '=', rate)
     return rate
 
 
-def adaptar_fecha(fecha):
-    fecha_modificada = fecha.split(" ")[0]
+def adaptar_fecha(fecha3):
+    fecha_modificada = fecha3.split(" ")[0]
     fecha_modificada = fecha_modificada.split("/")
     fecha_modificada = fecha_modificada[2] + '-' + fecha_modificada[1] + '-' + fecha_modificada[0]
     return fecha_modificada
@@ -70,9 +71,7 @@ if __name__ == '__main__':
     total_profit_euros = 0
     total_fees_euros = 0
     ID_operaciones_cerradas = []
-    for e in sheet_1.iter_rows(min_row=2,
-                             max_col=15,
-                             values_only=True):
+    for e in sheet_1.iter_rows(min_row=2, max_col=15, values_only=True):
         # creo una lista de operaciones cerradas
         ID_operaciones_cerradas.append(e[0])
         # este bloque calcula el total en euros
@@ -132,9 +131,7 @@ if __name__ == '__main__':
     gastos_deducibles_euro = 0
     tipos_de_gastos_deducibles = ['Rollover Fee']
 
-    for e in sheet_2.iter_rows(min_row=2,
-                             max_col=9,
-                             values_only=True):
+    for e in sheet_2.iter_rows(min_row=2, max_col=9, values_only=True):
         if e[2] in tipos_de_gastos_deducibles:
             fecha = e[0].strip()[:10]
             if fecha not in cambio_euro_dolar:
