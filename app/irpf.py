@@ -1,12 +1,5 @@
 # python 3.6
 
-# En las transacciones solo están las que se han realizado en el periodo considerado. Es posible por tanto que una
-# operación abierta antes del periodo incluya fees/dividends imputados como transaccion en el periodo anterior y es por
-# esto que el "Neto total" de operaciones cerradas y el "Equity change de operaciones cerradas en el periodo" pueden mostrar
-# una diferencia. Si vemos el "Equity change ordenes pendientes de cerrar en el período" del periodo anterior, debería
-# coincidir con la diferencia. A efectos de IRPF, estaría difiriendo la imputación de esos gastos al periodo siguiente,
-# lo cual no es correcto pero no me causa beneficio.
-
 import os
 from collections import defaultdict
 import requests
@@ -31,9 +24,9 @@ def menu():
         return opciones[int(opcion_menu) - 1]
 
 def rate_dolar(fecha):
-    address = 'https://api.exchangeratesapi.io/' + fecha + '?symbols=USD'
+    address = 'http://api.currencylayer.com/historical?access_key=' + config['API_CURRENCYLAYER'] + '&date=' + fecha + '&currencies=EUR&format=1'
     r = requests.get(address).json()
-    rate = r['rates']['USD']
+    rate = r['quotes']['USDEUR']
     print('Tipo de cambio para el', fecha, '=', rate)
     return rate
 
@@ -46,6 +39,17 @@ def adaptar_fecha(fecha):
 
 
 if __name__ == '__main__':
+    # configuracion
+    if os.path.isfile('config.json'):
+        with open('config.json', 'r') as f:
+            config = json.load(f)
+    else:
+        config = {}
+        API_KEY = input('Falta la API_KEY. Introducela y pulsa ENTER >> ')
+        config['API_CURRENCYLAYER'] = API_KEY
+        with open('config.json', 'w') as f:
+            json.dump(config, f)
+
     # Aqui almaceno los tipos de cambio que voy a necesitar. Para forzar la descarga, borrarlo
     if os.path.isfile('cambio_euro_dolar.json'):
         with open('cambio_euro_dolar.json', 'r') as f:
@@ -61,6 +65,8 @@ if __name__ == '__main__':
 
     # proceso los datos de posiciones cerradas
     estructura = defaultdict(dict)
+    adquisiciones = 0
+    transmisiones = 0
     total_profit_euros = 0
     total_fees_euros = 0
     ID_operaciones_cerradas = []
@@ -83,10 +89,16 @@ if __name__ == '__main__':
         inicial_cambio = cambio_euro_dolar[inicial_fecha]
         if final_fecha not in cambio_euro_dolar:
             cambio_euro_dolar[final_fecha] = rate_dolar(final_fecha)
+            # guardo los tipos de cambio en un fichero para reutilizarlo
+            with open('cambio_euro_dolar.json', 'w') as f:
+                json.dump(cambio_euro_dolar, f)
         final_cambio = cambio_euro_dolar[final_fecha]
         inicial_euro = inicial_dolar * inicial_cambio
+        adquisiciones = adquisiciones + inicial_euro
         final_euro = final_dolar * final_cambio
+        transmisiones = transmisiones + final_euro
         total_profit_euros = total_profit_euros + final_euro - inicial_euro
+        # Puesto así estoy calculando en euros al cambio del dia de la venta, en lugar de cuando se produce el gasto.
         total_fees_euros = total_fees_euros + float(e[13].replace(',', '.')) * final_cambio
 
         # aqui monto el diccionario con los resultados para cada trader copiado
@@ -116,9 +128,21 @@ if __name__ == '__main__':
     equity_change_cerradas = 0
     equity_change_abiertas = 0
     fondos_aportados = 0
+    gastos_deducibles_dolar = 0
+    gastos_deducibles_euro = 0
+    tipos_de_gastos_deducibles = ['Rollover Fee']
+
     for e in sheet_2.iter_rows(min_row=2,
                              max_col=9,
                              values_only=True):
+        if e[2] in tipos_de_gastos_deducibles:
+            fecha = e[0].strip()[:10]
+            if fecha not in cambio_euro_dolar:
+                cambio_euro_dolar[fecha] = rate_dolar(fecha)
+                with open('cambio_euro_dolar.json', 'w') as f:
+                    json.dump(cambio_euro_dolar, f)
+            gastos_deducibles_dolar = gastos_deducibles_dolar + e[5]
+            gastos_deducibles_euro = gastos_deducibles_euro + e[5] * cambio_euro_dolar[fecha]
         if e[4] in ID_operaciones_cerradas:
             equity_change_cerradas += e[6]
         else:
@@ -131,9 +155,7 @@ if __name__ == '__main__':
     posicion_fecha_cierre_primera_operacion = 'K' + str(sheet_1.max_row)
     posicion_fecha_apertura_primera_operacion = 'J' + str(sheet_1.max_row)
     print()
-    print('---Operaciones cerradas')
-    print('Fecha apertura/cierre primera operación', sheet_1[posicion_fecha_apertura_primera_operacion].value, '-', sheet_1[posicion_fecha_cierre_primera_operacion].value)
-    print('Fecha cierre última operación   ', sheet_1['K2'].value)
+    print('--- Desglose por trader')
     print()
 
     total_transacciones = 0
@@ -151,26 +173,23 @@ if __name__ == '__main__':
         total_profit += round(estructura[e]['profit'], 2)
         total_fees += round(estructura[e]['fees'], 2)
         total_spread += round(estructura[e]['spread'], 2)
-
-    print('-----------------------------')
+    print()
+    print('--- Resumen operaciones')
+    print()
+    print('Fondos aportados: ', '{:>8}'.format('{:.2f}'.format(fondos_aportados) + '$'))
     print('Operaciones cerradas =', total_transacciones)
-    print('Profit total   =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'),
-          '{:>8}'.format('{:.2f}'.format(total_profit_euros) + '€'))
-    print('Fees totales   =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'),
-          '{:>8}'.format('{:.2f}'.format(total_fees_euros) + '€'))
-    print('Neto total     =', '{:>8}'.format('{:.2f}'.format(total_profit + total_fees) + '$'),
-          '{:>8}'.format('{:.2f}'.format(total_profit_euros + total_fees_euros) + '€'))
+    print('Fecha apertura/cierre primera operación:', sheet_1[posicion_fecha_apertura_primera_operacion].value, '-',
+          sheet_1[posicion_fecha_cierre_primera_operacion].value)
+    print('Fecha cierre última operación:                             ', sheet_1['K2'].value)
+    print('Profit total   =', '{:>8}'.format('{:.2f}'.format(total_profit) + '$'))
+    print('Fees totales   =', '{:>8}'.format('{:.2f}'.format(total_fees) + '$'))
+    print('Neto total     =', '{:>8}'.format('{:.2f}'.format(total_profit + total_fees) + '$'))
     print('Spread total   =', '{:>8}'.format('{:.2f}'.format(total_spread * (-1)) + '$'))
     print()
-    print('---Transacciones')
-    print('Fondos aportados en el período:                          ',
-          '{:>8}'.format('{:.2f}'.format(fondos_aportados) + '$'))
-    print()
-    print('Equity change ordenes cerradas en el período:            ',
-          '{:>8}'.format('{:.2f}'.format(equity_change_cerradas) + '$'))
-    print('Equity change ordenes pendientes de cerrar en el período:',
-          '{:>8}'.format('{:.2f}'.format(equity_change_abiertas) + '$'))
-    print('Equity change en el período:                             ',
-          '{:>8}'.format('{:.2f}'.format(equity_change_cerradas + equity_change_abiertas) + '$'))
+    print('--- IRPF')
+    print('Total adquisiciones =', '{:>8}'.format('{:.2f}'.format(adquisiciones) + '€'))
+    print('Total transmisiones =', '{:>8}'.format('{:.2f}'.format(transmisiones) + '€'))
+    print('Ganancia Patrimonial =', '{:>8}'.format('{:.2f}'.format(transmisiones - adquisiciones) + '€'))
+    print('Gastos =', '{:>8}'.format('{:.2f}'.format(gastos_deducibles_euro) + '€'))
     print()
     input('Pulsa Enter para cerrar...')
