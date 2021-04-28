@@ -46,7 +46,7 @@ def rate_dolar(fecha2):
     response = requests.get(request_url, params=parameters)
 
     # Check if the response returns succesfully with response code 200
-    print(response)
+    # print(response)
 
     data = response.text
     try:
