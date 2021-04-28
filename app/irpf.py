@@ -1,11 +1,13 @@
 # python 3.6
 
 import os
+import datetime
 from collections import defaultdict
 import requests
-import json
 import os.path
 from openpyxl import load_workbook
+import xml.etree.ElementTree as ET
+import pickle
 
 
 def menu():
@@ -25,11 +27,36 @@ def menu():
 
 
 def rate_dolar(fecha2):
-    address = 'http://api.currencylayer.com/historical?access_key=' + config['API_CURRENCYLAYER'] + '&date=' + fecha2 + '&currencies=EUR&format=1'
-    r = requests.get(address).json()
-    rate = r['quotes']['USDEUR']
-    print('Tipo de cambio para el', fecha2, '=', rate)
-    return rate
+    # Building blocks for the URL
+    fecha2 = fecha2.strftime('%Y') + '-' + fecha2.strftime('%m') + '-' + fecha2.strftime('%d')
+    entrypoint = 'https://sdw-wsrest.ecb.europa.eu/service/'  # Using protocol 'https'
+    resource = 'data'  # The resource for data queries is always'data'
+    flowRef = 'EXR'  # Dataflow describing the data that needs to be returned, exchange rates in this case
+    key = 'D.USD.EUR.SP00.A'  # Defining the dimension values, explained below
+
+    # Define the parameters
+    parameters = {
+        'startPeriod': fecha2,  # Start date of the time series
+        'endPeriod': fecha2  # End of the time series
+    }
+    # Construct the URL
+    request_url = entrypoint + resource + '/' + flowRef + '/' + key
+    # Make the HTTP request
+    response = requests.get(request_url, params=parameters)
+
+    # Check if the response returns succesfully with response code 200
+    print(response)
+
+    data = response.text
+    try:
+        root = ET.fromstring(data)
+        value = root[1][0][2][1].attrib
+        print(fecha2, value)
+    except:
+        print('Dato vacio para el dia ', fecha2)
+        return 'sin_datos'
+
+    return 1/float(value['value'])
 
 
 def adaptar_fecha(fecha3):
@@ -40,23 +67,39 @@ def adaptar_fecha(fecha3):
 
 
 if __name__ == '__main__':
-    # configuracion
-    if os.path.isfile('config.json'):
-        with open('config.json', 'r') as f:
-            config = json.load(f)
-    else:
-        config = {}
-        API_KEY = input('Falta la API_KEY. Introducela y pulsa ENTER >> ')
-        config['API_CURRENCYLAYER'] = API_KEY
-        with open('config.json', 'w') as f:
-            json.dump(config, f)
-
+    # selecciono una fecha inicial para descargar cotizaciones del dolar
+    fecha_inicial = '2019-12-31'
+    fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%Y-%m-%d")
     # Aqui almaceno los tipos de cambio que voy a necesitar. Para forzar la descarga, borrarlo
-    if os.path.isfile('cambio_euro_dolar.json'):
-        with open('cambio_euro_dolar.json', 'r') as f:
-            cambio_euro_dolar = json.load(f)
+    if os.path.isfile('cambio_euro_dolar'):
+        with open('cambio_euro_dolar', 'rb') as f:
+            cambio_euro_dolar = pickle.load(f)
+            print(cambio_euro_dolar)
     else:
-        cambio_euro_dolar = {}
+        cambio_euro_dolar = []
+
+    # descargo los datos nuevos
+
+    today = datetime.datetime.today()
+    print('Hoy es ', today)
+
+    if len(cambio_euro_dolar) == 0:
+        cambio_euro_dolar.append([fecha_inicial, rate_dolar(fecha_inicial)])
+        print(cambio_euro_dolar, len(cambio_euro_dolar))
+
+    cambio_euro_dolar = sorted(cambio_euro_dolar, reverse=True)
+    ultima_fecha = cambio_euro_dolar[0][0]
+    print('Última fecha almacenada', ultima_fecha)
+    ultima_fecha = ultima_fecha + datetime.timedelta(days=1)
+    while ultima_fecha < today:
+        cambio = rate_dolar(ultima_fecha)
+        if type(cambio) == float:
+            cambio_euro_dolar.append([ultima_fecha, rate_dolar(ultima_fecha)])
+        ultima_fecha = ultima_fecha + datetime.timedelta(days=1)
+    print(cambio_euro_dolar, len(cambio_euro_dolar))
+
+    with open('cambio_euro_dolar', 'wb') as f:
+        pickle.dump(cambio_euro_dolar, f)
 
     file = menu()
 
@@ -79,19 +122,15 @@ if __name__ == '__main__':
         final_dolar = inicial_dolar + float(
             e[8].replace(',', '.'))  # calculo el valor final de la operacion sumando el beneficio al valos inicial
         inicial_fecha = adaptar_fecha(e[9])
-        final_fecha = adaptar_fecha(e[10])
-        if inicial_fecha not in cambio_euro_dolar:
-            cambio_euro_dolar[inicial_fecha] = rate_dolar(inicial_fecha)
-            # guardo los tipos de cambio en un fichero para reutilizarlo
-            with open('cambio_euro_dolar.json', 'w') as f:
-                json.dump(cambio_euro_dolar, f)
-        inicial_cambio = cambio_euro_dolar[inicial_fecha]
-        if final_fecha not in cambio_euro_dolar:
-            cambio_euro_dolar[final_fecha] = rate_dolar(final_fecha)
-            # guardo los tipos de cambio en un fichero para reutilizarlo
-            with open('cambio_euro_dolar.json', 'w') as f:
-                json.dump(cambio_euro_dolar, f)
-        final_cambio = cambio_euro_dolar[final_fecha]
+        inicial_fecha = datetime.datetime.strptime(adaptar_fecha(e[9]), "%Y-%m-%d")
+        for cambio in cambio_euro_dolar:
+            if inicial_fecha >= cambio[0]:
+                inicial_cambio = cambio[1]
+                break
+        final_fecha = datetime.datetime.strptime(adaptar_fecha(e[10]), "%Y-%m-%d")
+        for cambio in cambio_euro_dolar:
+            if final_fecha >= cambio[0]:
+                final_cambio = cambio[1]
         inicial_euro = inicial_dolar * inicial_cambio
         adquisiciones = adquisiciones + inicial_euro
         final_euro = final_dolar * final_cambio
@@ -133,13 +172,14 @@ if __name__ == '__main__':
 
     for e in sheet_2.iter_rows(min_row=2, max_col=9, values_only=True):
         if e[2] in tipos_de_gastos_deducibles:
-            fecha = e[0].strip()[:10]
-            if fecha not in cambio_euro_dolar:
-                cambio_euro_dolar[fecha] = rate_dolar(fecha)
-                with open('cambio_euro_dolar.json', 'w') as f:
-                    json.dump(cambio_euro_dolar, f)
+            fecha = datetime.datetime.strptime(e[0].strip()[:10], "%Y-%m-%d")
+            for cambio in cambio_euro_dolar:
+                if fecha >= cambio[0]:
+                    cambio = cambio[1]
+                    break
             gastos_deducibles_dolar = gastos_deducibles_dolar + e[5]
-            gastos_deducibles_euro = gastos_deducibles_euro + e[5] * cambio_euro_dolar[fecha]
+            gastos_deducibles_euro = gastos_deducibles_euro + e[5] * cambio
+
         if e[4] in ID_operaciones_cerradas:
             equity_change_cerradas += e[6]
         else:
