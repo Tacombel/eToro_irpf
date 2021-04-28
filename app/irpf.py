@@ -1,7 +1,6 @@
 # python 3.6
 
 import os
-import sys
 import datetime
 from collections import defaultdict
 import requests
