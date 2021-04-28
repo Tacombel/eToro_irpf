@@ -31,8 +31,8 @@ def rate_dolar(fecha2):
     fecha2 = fecha2.strftime('%Y') + '-' + fecha2.strftime('%m') + '-' + fecha2.strftime('%d')
     entrypoint = 'https://sdw-wsrest.ecb.europa.eu/service/'  # Using protocol 'https'
     resource = 'data'  # The resource for data queries is always'data'
-    flowRef = 'EXR'  # Dataflow describing the data that needs to be returned, exchange rates in this case
-    key = 'D.USD.EUR.SP00.A'  # Defining the dimension values, explained below
+    flowref = 'EXR'  # Dataflow describing the data that needs to be returned, exchange rates in this case
+    key_ecb = 'D.USD.EUR.SP00.A'  # Defining the dimension values, explained below
 
     # Define the parameters
     parameters = {
@@ -40,7 +40,7 @@ def rate_dolar(fecha2):
         'endPeriod': fecha2  # End of the time series
     }
     # Construct the URL
-    request_url = entrypoint + resource + '/' + flowRef + '/' + key
+    request_url = entrypoint + resource + '/' + flowref + '/' + key_ecb
     # Make the HTTP request
     response = requests.get(request_url, params=parameters)
 
@@ -74,29 +74,26 @@ if __name__ == '__main__':
     if os.path.isfile('cambio_euro_dolar'):
         with open('cambio_euro_dolar', 'rb') as f:
             cambio_euro_dolar = pickle.load(f)
-            print(cambio_euro_dolar)
     else:
         cambio_euro_dolar = []
 
     # descargo los datos nuevos
 
     today = datetime.datetime.today()
-    print('Hoy es ', today)
+    print('Hoy es', today)
 
     if len(cambio_euro_dolar) == 0:
         cambio_euro_dolar.append([fecha_inicial, rate_dolar(fecha_inicial)])
-        print(cambio_euro_dolar, len(cambio_euro_dolar))
 
     cambio_euro_dolar = sorted(cambio_euro_dolar, reverse=True)
     ultima_fecha = cambio_euro_dolar[0][0]
-    print('Última fecha almacenada', ultima_fecha)
+    print('Último cambio almacenado el', ultima_fecha)
     ultima_fecha = ultima_fecha + datetime.timedelta(days=1)
     while ultima_fecha < today:
         cambio = rate_dolar(ultima_fecha)
         if type(cambio) == float:
             cambio_euro_dolar.append([ultima_fecha, rate_dolar(ultima_fecha)])
         ultima_fecha = ultima_fecha + datetime.timedelta(days=1)
-    print(cambio_euro_dolar, len(cambio_euro_dolar))
 
     with open('cambio_euro_dolar', 'wb') as f:
         pickle.dump(cambio_euro_dolar, f)
@@ -110,7 +107,9 @@ if __name__ == '__main__':
     # proceso los datos de posiciones cerradas
     estructura = defaultdict(dict)
     adquisiciones = 0
+    num_adquisiciones = 0
     transmisiones = 0
+    num_transmissiones = 0
     total_profit_euros = 0
     total_fees_euros = 0
     ID_operaciones_cerradas = []
@@ -119,9 +118,8 @@ if __name__ == '__main__':
         ID_operaciones_cerradas.append(e[0])
         # este bloque calcula el total en euros
         inicial_dolar = float(e[3].replace(',', '.'))
-        final_dolar = inicial_dolar + float(
-            e[8].replace(',', '.'))  # calculo el valor final de la operacion sumando el beneficio al valos inicial
-        inicial_fecha = adaptar_fecha(e[9])
+        # calculo el valor final de la operacion sumando el beneficio al valor inicial
+        final_dolar = inicial_dolar + float(e[8].replace(',', '.'))
         inicial_fecha = datetime.datetime.strptime(adaptar_fecha(e[9]), "%Y-%m-%d")
         for cambio in cambio_euro_dolar:
             if inicial_fecha >= cambio[0]:
@@ -131,13 +129,13 @@ if __name__ == '__main__':
         for cambio in cambio_euro_dolar:
             if final_fecha >= cambio[0]:
                 final_cambio = cambio[1]
+                break
         inicial_euro = inicial_dolar * inicial_cambio
         adquisiciones = adquisiciones + inicial_euro
+        num_adquisiciones += 1
         final_euro = final_dolar * final_cambio
         transmisiones = transmisiones + final_euro
-        total_profit_euros = total_profit_euros + final_euro - inicial_euro
-        # Puesto así estoy calculando en euros al cambio del dia de la venta, en lugar de cuando se produce el gasto.
-        total_fees_euros = total_fees_euros + float(e[13].replace(',', '.')) * final_cambio
+        num_transmissiones += 1
 
         # aqui monto el diccionario con los resultados para cada trader copiado
         if e[2] is None:
@@ -227,6 +225,6 @@ if __name__ == '__main__':
     print('Total adquisiciones =', '{:>8}'.format('{:.2f}'.format(adquisiciones) + '€'))
     print('Total transmisiones =', '{:>8}'.format('{:.2f}'.format(transmisiones) + '€'))
     print('Ganancia Patrimonial =', '{:>8}'.format('{:.2f}'.format(transmisiones - adquisiciones) + '€'))
-    print('Gastos =', '{:>8}'.format('{:.2f}'.format(gastos_deducibles_euro) + '€'))
+    print('Gastos =', '{:>8}'.format('{:.2f}'.format(gastos_deducibles_euro)), '€ ', '(', format('{:.2f}'.format(gastos_deducibles_dolar)), '$)')
     print()
     input('Pulsa Enter para cerrar...')
