@@ -10,7 +10,7 @@ build_exe_options = {"packages": ["os"], "includes": ["queue"]}
 base = None
 
 setup(  name = "IRPF_eToro_2020",
-        version = "1.0",
+        version = "1.1",
         description = "Calculo del IRPF de Etoro",
         options = {"build_exe": build_exe_options},
         executables = [Executable("app/irpf.py", base=base)])
