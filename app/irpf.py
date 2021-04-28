@@ -1,6 +1,7 @@
 # python 3.6
 
 import os
+import sys
 import datetime
 from collections import defaultdict
 import requests
@@ -53,6 +54,7 @@ def rate_dolar(fecha2):
         value = root[1][0][2][1].attrib
         print(fecha2, value)
     except:
+        print('Error:', sys.exc_info()[0])
         print('Dato vacio para el dia ', fecha2)
         return 'sin_datos'
 
