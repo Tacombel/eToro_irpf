@@ -6,7 +6,6 @@ from collections import defaultdict
 import requests
 import os.path
 from openpyxl import load_workbook
-from xml.etree.ElementTree import ParseError
 import xml.etree.ElementTree as ET
 import pickle
 
@@ -27,9 +26,11 @@ def menu():
         return opciones[int(opcion_menu) - 1]
 
 
-def rate_dolar(fecha2):
+def rate_dolar(fecha2, fecha3):
     # Building blocks for the URL
     fecha2 = fecha2.strftime('%Y') + '-' + fecha2.strftime('%m') + '-' + fecha2.strftime('%d')
+    fecha3 = fecha3.strftime('%Y') + '-' + fecha3.strftime('%m') + '-' + fecha3.strftime('%d')
+    print(fecha2, fecha3)
     entrypoint = 'https://sdw-wsrest.ecb.europa.eu/service/'  # Using protocol 'https'
     resource = 'data'  # The resource for data queries is always'data'
     flowref = 'EXR'  # Dataflow describing the data that needs to be returned, exchange rates in this case
@@ -38,7 +39,7 @@ def rate_dolar(fecha2):
     # Define the parameters
     parameters = {
         'startPeriod': fecha2,  # Start date of the time series
-        'endPeriod': fecha2  # End of the time series
+        'endPeriod': fecha3,  # End of the time series
     }
     # Construct the URL
     request_url = entrypoint + resource + '/' + flowref + '/' + key_ecb
@@ -47,18 +48,17 @@ def rate_dolar(fecha2):
 
     # Check if the response returns succesfully with response code 200
     # print(response)
-
+    cambios = []
     data = response.text
-    try:
-        root = ET.fromstring(data)
-        value = root[1][0][2][1].attrib
-        print(fecha2, value)
-    except ParseError:
-        print('ParseError para el dia ', fecha2)
-        return 'sin_datos'
-
-    return 1/float(value['value'])
-
+    tree = ET.fromstring(data)
+    ns = {'generic':"http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic"}
+    dimensions = tree.findall('.//generic:Obs', namespaces=ns)
+    for dim in dimensions:
+        ObsDimension = dim.find('generic:ObsDimension', namespaces=ns)
+        ObsValue = dim.find('generic:ObsValue', namespaces=ns)
+        cambios.append([ObsDimension.get('value'), ObsValue.get('value')])
+    print(len(cambios))
+    return cambios
 
 def adaptar_fecha(fecha3):
     fecha_modificada = fecha3.split(" ")[0]
@@ -83,18 +83,13 @@ if __name__ == '__main__':
     today = datetime.datetime.today()
     print('Hoy es', today)
 
-    if len(cambio_euro_dolar) == 0:
-        cambio_euro_dolar.append([fecha_inicial, rate_dolar(fecha_inicial)])
-
     cambio_euro_dolar = sorted(cambio_euro_dolar, reverse=True)
-    ultima_fecha = cambio_euro_dolar[0][0]
+    if len(cambio_euro_dolar) == 0:
+        ultima_fecha = fecha_inicial
+    else:
+        ultima_fecha = cambio_euro_dolar[0][0]
     print('Último cambio almacenado el', ultima_fecha)
-    ultima_fecha = ultima_fecha + datetime.timedelta(days=1)
-    while ultima_fecha < today:
-        cambio = rate_dolar(ultima_fecha)
-        if type(cambio) == float:
-            cambio_euro_dolar.append([ultima_fecha, rate_dolar(ultima_fecha)])
-        ultima_fecha = ultima_fecha + datetime.timedelta(days=1)
+    nuevos_cambios = rate_dolar(ultima_fecha, today)
 
     with open('cambio_euro_dolar', 'wb') as f:
         pickle.dump(cambio_euro_dolar, f)
