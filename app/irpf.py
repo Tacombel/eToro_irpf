@@ -7,6 +7,7 @@ from collections import defaultdict
 import requests
 import os.path
 from openpyxl import load_workbook
+from xml.etree.ElementTree import ParseError
 import xml.etree.ElementTree as ET
 import pickle
 
@@ -53,9 +54,8 @@ def rate_dolar(fecha2):
         root = ET.fromstring(data)
         value = root[1][0][2][1].attrib
         print(fecha2, value)
-    except:
-        print('Error:', sys.exc_info()[0])
-        print('Dato vacio para el dia ', fecha2)
+    except ParseError:
+        print('ParseError para el dia ', fecha2)
         return 'sin_datos'
 
     return 1/float(value['value'])
