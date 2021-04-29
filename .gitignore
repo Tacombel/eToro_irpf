@@ -1,8 +1,3 @@
-/app/data*.csv
-/app/cambio_euro_dolar.json
 /app/eToroAccountStatement*
-/app/config.json
-/app/cambio_euro_dolar
-/app/cambio_euro_dolar.json.bak
 /build*/
 /app/cambio_euro_dolar.txt

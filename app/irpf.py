@@ -52,7 +52,7 @@ def rate_dolar(fecha2, fecha3):
     try:
         tree = ET.fromstring(data)
     except ParseError:
-        print('No hay datos')
+        print('No hay datos', response)
         return cambios
     ns = {'generic':"http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic"}
     dimensions = tree.findall('.//generic:Obs', namespaces=ns)
