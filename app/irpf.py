@@ -1,13 +1,12 @@
 # python 3.6
 
 import os
-import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
 import requests
 import os.path
 from openpyxl import load_workbook
 import xml.etree.ElementTree as ET
-import pickle
 
 
 def menu():
@@ -30,7 +29,6 @@ def rate_dolar(fecha2, fecha3):
     # Building blocks for the URL
     fecha2 = fecha2.strftime('%Y') + '-' + fecha2.strftime('%m') + '-' + fecha2.strftime('%d')
     fecha3 = fecha3.strftime('%Y') + '-' + fecha3.strftime('%m') + '-' + fecha3.strftime('%d')
-    print(fecha2, fecha3)
     entrypoint = 'https://sdw-wsrest.ecb.europa.eu/service/'  # Using protocol 'https'
     resource = 'data'  # The resource for data queries is always'data'
     flowref = 'EXR'  # Dataflow describing the data that needs to be returned, exchange rates in this case
@@ -50,14 +48,24 @@ def rate_dolar(fecha2, fecha3):
     # print(response)
     cambios = []
     data = response.text
+    print(data)
     tree = ET.fromstring(data)
     ns = {'generic':"http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic"}
     dimensions = tree.findall('.//generic:Obs', namespaces=ns)
     for dim in dimensions:
         ObsDimension = dim.find('generic:ObsDimension', namespaces=ns)
+        fecha = ObsDimension.get('value')
         ObsValue = dim.find('generic:ObsValue', namespaces=ns)
-        cambios.append([ObsDimension.get('value'), ObsValue.get('value')])
-    print(len(cambios))
+        # para hacer ahorrarme operaciones el que interesa es el $/EUR
+        valor = 1/float(ObsValue.get('value'))
+        print(fecha, valor)
+        cambios.append([fecha, valor])
+    if len(cambios) == 0:
+        print('No hay datos nuevos')
+    elif len(cambios) == 1:
+        print('Hay un dato nuevo')
+    elif len(cambios) > 1:
+        print('Hay', len(cambios), 'datos nuevos')
     return cambios
 
 def adaptar_fecha(fecha3):
@@ -70,29 +78,46 @@ def adaptar_fecha(fecha3):
 if __name__ == '__main__':
     # selecciono una fecha inicial para descargar cotizaciones del dolar
     fecha_inicial = '2019-12-31'
-    fecha_inicial = datetime.datetime.strptime(fecha_inicial, "%Y-%m-%d")
+    fecha_inicial = datetime.strptime(fecha_inicial, "%Y-%m-%d")
     # Aqui almaceno los tipos de cambio que voy a necesitar. Para forzar la descarga, borrarlo
-    if os.path.isfile('cambio_euro_dolar'):
-        with open('cambio_euro_dolar', 'rb') as f:
-            cambio_euro_dolar = pickle.load(f)
-    else:
-        cambio_euro_dolar = []
+    cambio_euro_dolar = []
+    cambio_euro_dolar_bruto = []
+    if os.path.isfile('cambio_euro_dolar.txt'):
+        with open('cambio_euro_dolar.txt', 'r') as filehandle:
+            for line in filehandle:
+                line = line[:-1]
+                line = line[:-1]
+                line = line[1:]
+                line = line.split(',')
+                line[0] = line[0].strip("'")
+                line[1] = float(line[1])
+                cambio_euro_dolar_bruto.append(line)
+        for e in cambio_euro_dolar_bruto:
+            cambio_euro_dolar.append([datetime.strptime(e[0], "%Y-%m-%d"), e[1]])
+        cambio_euro_dolar = sorted(cambio_euro_dolar, reverse=True)
 
-    # descargo los datos nuevos
+    today = datetime.today()
+    today = datetime(today.year, today.month, today.day)
+    print(today.strftime('Hoy es %d-%m-%Y'))
 
-    today = datetime.datetime.today()
-    print('Hoy es', today)
-
-    cambio_euro_dolar = sorted(cambio_euro_dolar, reverse=True)
     if len(cambio_euro_dolar) == 0:
         ultima_fecha = fecha_inicial
     else:
         ultima_fecha = cambio_euro_dolar[0][0]
-    print('Último cambio almacenado el', ultima_fecha)
-    nuevos_cambios = rate_dolar(ultima_fecha, today)
 
-    with open('cambio_euro_dolar', 'wb') as f:
-        pickle.dump(cambio_euro_dolar, f)
+    print(ultima_fecha.strftime('Último cambio almacenado el %d-%m-%Y'))
+    if today > ultima_fecha + timedelta(days=1):
+        nuevos_cambios = rate_dolar(ultima_fecha, today)
+        cambio_euro_dolar_bruto = cambio_euro_dolar_bruto + nuevos_cambios
+        cambio_euro_dolar = []
+        for e in cambio_euro_dolar_bruto:
+            cambio_euro_dolar.append([datetime.strptime(e[0], "%Y-%m-%d"), e[1]])
+        cambio_euro_dolar = sorted(cambio_euro_dolar, reverse=True)
+        with open('cambio_euro_dolar.txt', 'w') as filehandle:
+            for listitem in cambio_euro_dolar_bruto:
+                listitem = str(listitem).strip('(')
+                listitem = str(listitem).strip(')')
+                filehandle.write('%s\n' % str(listitem))
 
     file = menu()
 
@@ -116,12 +141,12 @@ if __name__ == '__main__':
         inicial_dolar = float(e[3].replace(',', '.'))
         # calculo el valor final de la operacion sumando el beneficio al valor inicial
         final_dolar = inicial_dolar + float(e[8].replace(',', '.'))
-        inicial_fecha = datetime.datetime.strptime(adaptar_fecha(e[9]), "%Y-%m-%d")
+        inicial_fecha = datetime.strptime(adaptar_fecha(e[9]), "%Y-%m-%d")
         for cambio in cambio_euro_dolar:
             if inicial_fecha >= cambio[0]:
                 inicial_cambio = cambio[1]
                 break
-        final_fecha = datetime.datetime.strptime(adaptar_fecha(e[10]), "%Y-%m-%d")
+        final_fecha = datetime.strptime(adaptar_fecha(e[10]), "%Y-%m-%d")
         for cambio in cambio_euro_dolar:
             if final_fecha >= cambio[0]:
                 final_cambio = cambio[1]
@@ -166,7 +191,7 @@ if __name__ == '__main__':
 
     for e in sheet_2.iter_rows(min_row=2, max_col=9, values_only=True):
         if e[2] in tipos_de_gastos_deducibles:
-            fecha = datetime.datetime.strptime(e[0].strip()[:10], "%Y-%m-%d")
+            fecha = datetime.strptime(e[0].strip()[:10], "%Y-%m-%d")
             for cambio in cambio_euro_dolar:
                 if fecha >= cambio[0]:
                     cambio = cambio[1]
