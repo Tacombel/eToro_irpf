@@ -7,6 +7,7 @@ import requests
 import os.path
 from openpyxl import load_workbook
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import ParseError
 
 
 def menu():
@@ -48,8 +49,11 @@ def rate_dolar(fecha2, fecha3):
     # print(response)
     cambios = []
     data = response.text
-    print(data)
-    tree = ET.fromstring(data)
+    try:
+        tree = ET.fromstring(data)
+    except ParseError:
+        print('No hay datos')
+        return cambios
     ns = {'generic':"http://www.sdmx.org/resources/sdmxml/schemas/v2_1/data/generic"}
     dimensions = tree.findall('.//generic:Obs', namespaces=ns)
     for dim in dimensions:
@@ -106,8 +110,8 @@ if __name__ == '__main__':
         ultima_fecha = cambio_euro_dolar[0][0]
 
     print(ultima_fecha.strftime('Último cambio almacenado el %d-%m-%Y'))
-    if today > ultima_fecha + timedelta(days=1):
-        nuevos_cambios = rate_dolar(ultima_fecha, today)
+    if today > ultima_fecha:
+        nuevos_cambios = rate_dolar(ultima_fecha + timedelta(days=1), today)
         cambio_euro_dolar_bruto = cambio_euro_dolar_bruto + nuevos_cambios
         cambio_euro_dolar = []
         for e in cambio_euro_dolar_bruto:
