@@ -8,6 +8,7 @@ import os.path
 from openpyxl import load_workbook
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
+import configparser
 
 
 def menu():
@@ -80,8 +81,12 @@ def adaptar_fecha(fecha3):
 
 
 if __name__ == '__main__':
-    # selecciono una fecha inicial para descargar cotizaciones del dolar
-    fecha_inicial = '2019-12-31'
+    # cargo configuracion
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    # defino la fecha inicial por defecto para descargar cotizaciones del dolar
+    fecha_inicial = config['DEFAULT']['FECHA_INICIAL']
     fecha_inicial = datetime.strptime(fecha_inicial, "%Y-%m-%d")
     # Aqui almaceno los tipos de cambio que voy a necesitar. Para forzar la descarga, borrarlo
     cambio_euro_dolar = []
