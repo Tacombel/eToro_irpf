@@ -9,5 +9,5 @@ jdcal==1.4.1
 openpyxl==3.0.7
 requests==2.25.1
 typing-extensions==3.7.4.3
-urllib3==1.26.4
+urllib3==1.26.5
 zipp==3.4.1
